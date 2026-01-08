@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1062207686610",
+    "firebase_url": "https://gps-tracker-c3ce4-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "gps-tracker-c3ce4",
+    "storage_bucket": "gps-tracker-c3ce4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062207686610:android:c3e0ec585b36e3f8872a0b",
+        "android_client_info": {
+          "package_name": "com.example.aplikacjagps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZo04sKH9VKThqUp49ejVT6f1LaOlmLkA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
