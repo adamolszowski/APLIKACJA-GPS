@@ -49,7 +49,7 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".MonitorActivity" />
         <activity
-            android:name=".LoginActivity"
+            android:name=".RegisterActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
