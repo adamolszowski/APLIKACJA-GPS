@@ -9,8 +9,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.DatabaseReference;
 
 import androidx.core.content.ContextCompat;
 
@@ -54,7 +52,7 @@ public class HomeActivity extends AppCompatActivity {
         btnLogout.setOnClickListener(v -> {
             stopService(new Intent(this, LocationForegroundService.class));
             auth.signOut();
-            startActivity(new Intent(this, LoginActivity.class));
+            startActivity(new Intent(this, RegisterActivity.class));
             finish();
         });
 
@@ -92,7 +90,7 @@ public class HomeActivity extends AppCompatActivity {
 
 
         if (auth.getCurrentUser() == null) {
-            startActivity(new Intent(this, LoginActivity.class));
+            startActivity(new Intent(this, RegisterActivity.class));
             finish();
             return;
         }
