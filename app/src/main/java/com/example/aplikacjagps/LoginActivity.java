@@ -14,6 +14,7 @@ import com.google.firebase.auth.FirebaseAuth;
 public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth auth;
+    private boolean biometricHandled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,8 +39,24 @@ public class LoginActivity extends AppCompatActivity {
 
             auth.signInWithEmailAndPassword(email, pass)
                     .addOnSuccessListener(result -> {
-                        startActivity(new Intent(this, HomeActivity.class));
-                        finish();
+                        // 1) logowanie do Firebase OK
+                        // 2) dopiero po odcisku palca wpuszczamy dalej
+                        if (!BiometricAuthHelper.canUseBiometrics(this)) {
+                            Toast.makeText(this, "Brak biometrii / brak dodanego odcisku palca", Toast.LENGTH_LONG).show();
+                            auth.signOut();
+                            return;
+                        }
+
+                        BiometricAuthHelper.authenticate(
+                                this,
+                                "Potwierdź logowanie",
+                                "Użyj odcisku palca",
+                                "Wymagane uwierzytelnienie biometryczne",
+                                () -> {
+                                    startActivity(new Intent(this, HomeActivity.class));
+                                    finish();
+                                }
+                        );
                     })
                     .addOnFailureListener(e ->
                             Toast.makeText(this, "Błąd logowania: " + e.getMessage(), Toast.LENGTH_LONG).show()
@@ -54,10 +71,26 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        if (auth.getCurrentUser() != null) {
-            startActivity(new Intent(this, HomeActivity.class));
-            finish();
+        // Auto-logowanie (jeśli już jest sesja) też wymaga biometrii.
+        if (auth.getCurrentUser() != null && !biometricHandled) {
+            biometricHandled = true;
+
+            if (!BiometricAuthHelper.canUseBiometrics(this)) {
+                Toast.makeText(this, "Brak biometrii / brak dodanego odcisku palca", Toast.LENGTH_LONG).show();
+                auth.signOut();
+                return;
+            }
+
+            BiometricAuthHelper.authenticate(
+                    this,
+                    "Potwierdź logowanie",
+                    "Użyj odcisku palca",
+                    "Wymagane uwierzytelnienie biometryczne",
+                    () -> {
+                        startActivity(new Intent(this, HomeActivity.class));
+                        finish();
+                    }
+            );
         }
     }
 }
-

@@ -116,7 +116,22 @@ public class RequestsActivity extends AppCompatActivity {
         blp2.setMargins(16, 16, 0, 0);
         btnReject.setLayoutParams(blp2);
 
-        btnAccept.setOnClickListener(v -> updateRequestStatus(requestId, "accepted"));
+        btnAccept.setOnClickListener(v -> {
+            // Biometria wymagana do akceptacji requestu
+            if (!BiometricAuthHelper.canUseBiometrics(this)) {
+                Toast.makeText(this, "Brak biometrii / brak dodanego odcisku palca", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            BiometricAuthHelper.authenticate(
+                    this,
+                    "Potwierdź akceptację",
+                    "Użyj odcisku palca",
+                    "Wymagane uwierzytelnienie biometryczne",
+                    () -> updateRequestStatus(requestId, "accepted")
+            );
+        });
+
         btnReject.setOnClickListener(v -> updateRequestStatus(requestId, "rejected"));
 
         buttons.addView(btnAccept);

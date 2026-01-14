@@ -49,4 +49,6 @@ dependencies {
     implementation libs.firebase.firestore
     implementation libs.firebase.database
     implementation "com.google.android.gms:play-services-location:21.3.0"
+    implementation "androidx.biometric:biometric:1.2.0-alpha05"
+
 }

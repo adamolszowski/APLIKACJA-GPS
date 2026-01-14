@@ -31,6 +31,12 @@ public class StartSessionActivity extends AppCompatActivity {
         Button btnSend = findViewById(R.id.btnSendRequest);
 
         btnSend.setOnClickListener(v -> {
+            if (auth.getCurrentUser() == null) {
+                Toast.makeText(this, "Zaloguj się ponownie", Toast.LENGTH_LONG).show();
+                finish();
+                return;
+            }
+
             String targetPublicId = etPublicId.getText().toString().trim();
 
             if (targetPublicId.isEmpty()) {
@@ -38,8 +44,21 @@ public class StartSessionActivity extends AppCompatActivity {
                 return;
             }
 
-            findUserAndCreateRequest(targetPublicId);
+            // Biometria wymagana do wysłania requestu
+            if (!BiometricAuthHelper.canUseBiometrics(this)) {
+                Toast.makeText(this, "Brak biometrii / brak dodanego odcisku palca", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            BiometricAuthHelper.authenticate(
+                    this,
+                    "Potwierdź wysłanie zapytania",
+                    "Użyj odcisku palca",
+                    "Wymagane uwierzytelnienie biometryczne",
+                    () -> findUserAndCreateRequest(targetPublicId)
+            );
         });
+
     }
 
     private void findUserAndCreateRequest(String publicId) {
