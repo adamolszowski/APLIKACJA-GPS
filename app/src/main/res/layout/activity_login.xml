@@ -73,28 +73,27 @@
                     android:autofillHints="password" />
             </com.google.android.material.textfield.TextInputLayout>
 
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogin"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Zaloguj"
                 android:background="@drawable/btn_gradient_ripple"
-                android:textColor="@android:color/white"
+                android:backgroundTint="@null"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                app:backgroundTint="@null"
-                android:backgroundTint="@null"/>
-
-
-
+                android:layout_marginTop="10dp"
+                android:text="Zaloguj"
+                android:textColor="@android:color/white"
+                app:backgroundTint="@null" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnGoRegister"
+                style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Załóż konto"
                 android:layout_marginTop="10dp"
-                style="@style/Widget.Material3.Button.TextButton" />
+                android:text="Załóż konto" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

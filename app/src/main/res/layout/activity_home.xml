@@ -1,51 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="20dp"
+    android:background="@android:color/white">
 
-    <TextView
-        android:id="@+id/tvUid"
-        android:layout_width="match_parent"
+
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/homeCard"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="UID:"
-        android:textSize="18sp" />
+        app:cardCornerRadius="20dp"
+        app:cardUseCompatPadding="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintWidth_max="520dp">
 
-    <TextView
-        android:id="@+id/tvPublicId"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Twoje ID:"
-        android:textSize="18sp"
-        android:layout_marginTop="8dp"/>
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true">
 
-    <Button
-        android:id="@+id/btnStartSession"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Rozpocznij sesję"
-        android:layout_marginTop="24dp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
 
-    <Button
-        android:id="@+id/btnRequests"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Zapytania (zgody)"
-        android:layout_marginTop="12dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Panel główny"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:paddingBottom="6dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Zarządzaj sesją i monitorowaniem"
+                    android:textSize="14sp"
+                    android:alpha="0.8"
+                    android:paddingBottom="16dp" />
+
+                <!-- Sekcja ID -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Informacje konta"
+                            android:textStyle="bold"
+                            android:paddingBottom="10dp" />
+
+                        <TextView
+                            android:id="@+id/tvUid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="UID:"
+                            android:textSize="16sp"
+                            android:paddingBottom="6dp" />
+
+                        <TextView
+                            android:id="@+id/tvPublicId"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Twoje ID:"
+                            android:textSize="16sp" />
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
 
 
-    <Button
-        android:id="@+id/btnLogout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Wyloguj"
-        android:layout_marginTop="16dp"/>
-    <Button
-        android:id="@+id/btnOpenMonitor"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Podgląd (Monitoruj)"
-        android:layout_marginTop="12dp"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStartSession"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Rozpocznij sesję"
+                    android:textColor="@android:color/white"
+                    android:background="@drawable/btn_gradient_ripple"
+                    android:backgroundTint="@null"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:backgroundTint="@null"
+                    app:cornerRadius="14dp" />
 
-</LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRequests"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Zapytania (zgody)"
+                    android:layout_marginTop="10dp"
+                    app:cornerRadius="14dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenMonitor"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Podgląd (Monitoruj)"
+                    android:layout_marginTop="10dp"
+                    app:cornerRadius="14dp" />
+
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogout"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Wyloguj"
+                    android:layout_marginTop="12dp" />
+
+            </LinearLayout>
+        </ScrollView>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
