@@ -26,6 +26,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.APLIKACJAGPS">
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBFySfr2C3T62sv-FWkMjN3nLqgLKywdS0" />
+
+
         <service
             android:name=".LocationForegroundService"
             android:exported="false"
