@@ -11,12 +11,7 @@ import androidx.core.content.ContextCompat;
 
 import java.util.concurrent.Executor;
 
-/**
- * Prosty „gate” do biometrii: wywołujesz authenticate(...), a akcja wykona się dopiero po sukcesie.
- *
- * Uwaga: Android nie daje 100% gwarancji wymuszenia wyłącznie odcisku palca
- * (jeśli urządzenie ma też FaceID), ale UI i komunikat ustawiamy pod „odcisk palca”.
- */
+
 public class BiometricAuthHelper {
 
     private BiometricAuthHelper() {
@@ -70,7 +65,7 @@ public class BiometricAuthHelper {
                 .setTitle(title)
                 .setSubtitle(subtitle)
                 .setDescription(description)
-                // Bez DEVICE_CREDENTIAL, żeby spełnić wymaganie „odcisk palca”.
+
                 .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
                 .setNegativeButtonText("Anuluj")
                 .build();

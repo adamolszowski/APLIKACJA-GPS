@@ -39,8 +39,7 @@ public class LoginActivity extends AppCompatActivity {
 
             auth.signInWithEmailAndPassword(email, pass)
                     .addOnSuccessListener(result -> {
-                        // 1) logowanie do Firebase OK
-                        // 2) dopiero po odcisku palca wpuszczamy dalej
+
                         if (!BiometricAuthHelper.canUseBiometrics(this)) {
                             Toast.makeText(this, "Brak biometrii / brak dodanego odcisku palca", Toast.LENGTH_LONG).show();
                             auth.signOut();
@@ -71,7 +70,7 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        // Auto-logowanie (jeśli już jest sesja) też wymaga biometrii.
+
         if (auth.getCurrentUser() != null && !biometricHandled) {
             biometricHandled = true;
 

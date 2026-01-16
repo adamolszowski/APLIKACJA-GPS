@@ -62,7 +62,7 @@ public class LocationForegroundService extends Service {
 
         String uid = auth.getCurrentUser().getUid();
 
-        // 1) Czy user jest targetem?
+
         db.collection("sessions")
                 .whereEqualTo("status", "active")
                 .whereEqualTo("targetUid", uid)
@@ -76,7 +76,7 @@ public class LocationForegroundService extends Service {
                         return;
                     }
 
-                    // 2) Czy user jest monitorem?
+
                     db.collection("sessions")
                             .whereEqualTo("status", "active")
                             .whereEqualTo("monitorUid", uid)
@@ -107,7 +107,7 @@ public class LocationForegroundService extends Service {
 
                 String uid = auth.getCurrentUser().getUid();
 
-                // Tylko target wysyła lokalizację (żeby nie nadpisywać "latest")
+
                 if (isTarget) {
                     sender.sendOnce(activeSessionId, uid);
                 }

@@ -44,7 +44,7 @@ public class LocationSender {
                 0
         )
                 .setWaitForAccurateLocation(true)
-                .setMaxUpdates(1) // <-- tylko 1 świeży odczyt
+                .setMaxUpdates(1)
                 .build();
 
         LocationCallback cb = new LocationCallback() {

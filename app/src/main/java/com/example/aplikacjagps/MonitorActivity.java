@@ -1,6 +1,11 @@
 package com.example.aplikacjagps;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
+import android.view.animation.Interpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -15,29 +20,38 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.Locale;
 
 public class MonitorActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private FirebaseAuth auth;
     private FirebaseFirestore db;
 
-    private TextView tvStatus, tvLatLng, tvSessionId, tvTargetUid, tvTargetPublicId;
+    private TextView tvStatus, tvLatLng, tvTargetPublicId;
 
     private ValueEventListener locationListener;
     private DatabaseReference locationRef;
 
-    // Google Maps
+
     private GoogleMap gMap;
     private Marker targetMarker;
-    private boolean cameraMoved = false;
+
+
+    private boolean cameraInitialized = false;
+    private static final float INITIAL_ZOOM = 16f;
+    private static final long MARKER_ANIM_MS = 800;
+    private static final int CAMERA_ANIM_MS = 700;
+
+
+    private LatLng pendingPos = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,38 +60,52 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
 
         tvStatus = findViewById(R.id.tvStatus);
         tvLatLng = findViewById(R.id.tvLatLng);
-        tvSessionId = findViewById(R.id.tvSessionId);
-        tvTargetUid = findViewById(R.id.tvTargetUid);
         tvTargetPublicId = findViewById(R.id.tvTargetPublicId);
 
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // Map init
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        if (mapFragment != null) {
-            mapFragment.getMapAsync(this);
+        setupMapFragment();
+        findAndListenActiveSession();
+    }
+
+    private void setupMapFragment() {
+
+        SupportMapFragment mapFragment =
+                (SupportMapFragment) getSupportFragmentManager().findFragmentByTag("MAP");
+
+        if (mapFragment == null) {
+            mapFragment = SupportMapFragment.newInstance();
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.map, mapFragment, "MAP")
+                    .commitNow();
         }
 
-        findAndListenActiveSession();
+        mapFragment.getMapAsync(this);
     }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.gMap = googleMap;
-        // Opcjonalne UI
         gMap.getUiSettings().setZoomControlsEnabled(true);
+
+
+        if (pendingPos != null) {
+            updateMapPosition(pendingPos);
+        }
     }
 
     private void findAndListenActiveSession() {
         if (auth.getCurrentUser() == null) {
-            tvStatus.setText("Brak zalogowanego użytkownika.");
+            tvStatus.setText("Status: Brak zalogowanego użytkownika.");
+            tvTargetPublicId.setText("Publiczne ID: -");
+            tvLatLng.setText("LAT/LNG: -");
             return;
         }
 
         String myUid = auth.getCurrentUser().getUid();
-        tvStatus.setText("Szukam aktywnej sesji...");
+        tvStatus.setText("Status: Szukam aktywnej sesji...");
 
         db.collection("sessions")
                 .whereEqualTo("status", "active")
@@ -86,52 +114,48 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
                 .get()
                 .addOnSuccessListener(qs -> {
                     if (qs.isEmpty()) {
-                        tvStatus.setText("Brak aktywnej sesji dla monitorującego.");
-                        tvSessionId.setText("SessionId: -");
-                        tvTargetUid.setText("Monitorowany UID: -");
-                        tvTargetPublicId.setText("Monitorowany ID (public): -");
+                        tvStatus.setText("Status: Brak aktywnej sesji.");
+                        tvTargetPublicId.setText("Publiczne ID: -");
+                        tvLatLng.setText("LAT/LNG: -");
+                        detachRtdbListener();
                         return;
                     }
 
                     DocumentSnapshot sessionDoc = qs.getDocuments().get(0);
-
                     String sessionId = sessionDoc.getId();
-                    String targetUid = sessionDoc.getString("targetUid"); // UID monitorowanego
+                    String targetUid = sessionDoc.getString("targetUid");
 
-                    tvStatus.setText("Sesja aktywna");
-                    tvSessionId.setText("SessionId: " + sessionId);
-                    tvTargetUid.setText("Monitorowany UID: " + (targetUid != null ? targetUid : "-"));
+                    tvStatus.setText("Status: Sesja aktywna");
 
-                    // (Opcjonalnie) pokaż publicId monitorowanego z users/{uid}
+
                     if (targetUid != null && !targetUid.isEmpty()) {
                         db.collection("users").document(targetUid)
                                 .get()
                                 .addOnSuccessListener(userDoc -> {
                                     String publicId = userDoc.getString("publicId");
-                                    tvTargetPublicId.setText("Monitorowany ID (public): " +
-                                            (publicId != null ? publicId : "-"));
+                                    tvTargetPublicId.setText("Publiczne ID: " + (publicId != null ? publicId : "-"));
                                 })
                                 .addOnFailureListener(e ->
-                                        tvTargetPublicId.setText("Monitorowany ID (public): (błąd odczytu)")
+                                        tvTargetPublicId.setText("Publiczne ID: (błąd odczytu)")
                                 );
                     } else {
-                        tvTargetPublicId.setText("Monitorowany ID (public): -");
+                        tvTargetPublicId.setText("Publiczne ID: -");
                     }
 
-                    // Reset kamery przy zmianie sesji (na wypadek, gdyby kiedyś było przełączanie)
-                    cameraMoved = false;
+
                     targetMarker = null;
+                    cameraInitialized = false;
+                    pendingPos = null;
 
                     listenRtdb(sessionId);
                 })
-                .addOnFailureListener(e -> tvStatus.setText("Błąd Firestore: " + e.getMessage()));
+                .addOnFailureListener(e ->
+                        tvStatus.setText("Status: Błąd Firestore: " + e.getMessage())
+                );
     }
 
     private void listenRtdb(String sessionId) {
-        // Usuń poprzedni listener, jeśli był (bezpieczniej)
-        if (locationRef != null && locationListener != null) {
-            locationRef.removeEventListener(locationListener);
-        }
+        detachRtdbListener();
 
         locationRef = FirebaseDatabase.getInstance()
                 .getReference("locations")
@@ -142,49 +166,99 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!snapshot.exists()) {
-                    tvLatLng.setText("Brak danych lokalizacji jeszcze...");
+                    tvLatLng.setText("LAT/LNG: brak danych");
                     return;
                 }
 
                 Double lat = snapshot.child("lat").getValue(Double.class);
                 Double lng = snapshot.child("lng").getValue(Double.class);
 
-                tvLatLng.setText("LAT: " + lat + "\nLNG: " + lng);
-
-                if (lat == null || lng == null) return;
-                if (gMap == null) return;
-
-                LatLng pos = new LatLng(lat, lng);
-
-                if (targetMarker == null) {
-                    targetMarker = gMap.addMarker(new MarkerOptions()
-                            .position(pos)
-                            .title("Monitorowany"));
-                } else {
-                    targetMarker.setPosition(pos);
+                if (lat == null || lng == null) {
+                    tvLatLng.setText("LAT/LNG: brak danych");
+                    return;
                 }
 
-                // Kamerę ustaw tylko pierwszy raz, żeby nie skakało przy każdej aktualizacji
-                if (!cameraMoved) {
-                    gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, 16f));
-                    cameraMoved = true;
-                }
+                tvLatLng.setText(String.format(Locale.US, "LAT/LNG: %.5f, %.5f", lat, lng));
+
+                pendingPos = new LatLng(lat, lng);
+                updateMapPosition(pendingPos);
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                tvLatLng.setText("RTDB error: " + error.getMessage());
+                tvLatLng.setText("LAT/LNG: błąd RTDB");
             }
         };
 
         locationRef.addValueEventListener(locationListener);
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
+    private void updateMapPosition(@NonNull LatLng pos) {
+        if (gMap == null) return;
+
+        if (targetMarker == null) {
+            targetMarker = gMap.addMarker(new MarkerOptions()
+                    .position(pos)
+                    .title("Monitorowany"));
+
+
+            gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, INITIAL_ZOOM));
+            cameraInitialized = true;
+            return;
+        }
+
+
+        animateMarkerTo(targetMarker, pos, MARKER_ANIM_MS);
+
+
+        if (cameraInitialized) {
+            gMap.animateCamera(
+                    CameraUpdateFactory.newLatLng(pos),
+                    CAMERA_ANIM_MS,
+                    null
+            );
+        } else {
+            gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, INITIAL_ZOOM));
+            cameraInitialized = true;
+        }
+    }
+
+    private void animateMarkerTo(@NonNull Marker marker, @NonNull LatLng finalPosition, long durationMs) {
+        LatLng start = marker.getPosition();
+        long startTime = SystemClock.uptimeMillis();
+
+        Interpolator interpolator = new LinearInterpolator();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                float t = (float) (SystemClock.uptimeMillis() - startTime) / (float) durationMs;
+                float v = interpolator.getInterpolation(Math.min(1f, t));
+
+                double lat = (finalPosition.latitude - start.latitude) * v + start.latitude;
+                double lng = (finalPosition.longitude - start.longitude) * v + start.longitude;
+
+                marker.setPosition(new LatLng(lat, lng));
+
+                if (t < 1f) {
+                    handler.postDelayed(this, 16);
+                }
+            }
+        });
+    }
+
+    private void detachRtdbListener() {
         if (locationRef != null && locationListener != null) {
             locationRef.removeEventListener(locationListener);
         }
+        locationRef = null;
+        locationListener = null;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        detachRtdbListener();
     }
 }

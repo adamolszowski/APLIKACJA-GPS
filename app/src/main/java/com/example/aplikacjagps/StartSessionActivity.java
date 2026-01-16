@@ -44,7 +44,7 @@ public class StartSessionActivity extends AppCompatActivity {
                 return;
             }
 
-            // Biometria wymagana do wysłania requestu
+
             if (!BiometricAuthHelper.canUseBiometrics(this)) {
                 Toast.makeText(this, "Brak biometrii / brak dodanego odcisku palca", Toast.LENGTH_LONG).show();
                 return;

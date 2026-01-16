@@ -56,7 +56,7 @@ public class RegisterActivity extends AppCompatActivity {
                         }
 
                         String uid = user.getUid();
-                        String publicId = generatePublicId(6); // np. 6 znaków
+                        String publicId = generatePublicId(6);
 
                         Map<String, Object> data = new HashMap<>();
                         data.put("publicId", publicId);
@@ -81,12 +81,12 @@ public class RegisterActivity extends AppCompatActivity {
         });
 
         btnGoLogin.setOnClickListener(v -> {
-            finish(); // wraca do LoginActivity
+            finish();
         });
     }
 
     private String generatePublicId(int len) {
-        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // bez 0/O/I/1 (czytelniej)
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         Random r = new Random();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < len; i++) {

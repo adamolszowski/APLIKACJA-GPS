@@ -105,7 +105,7 @@ public class RequestsActivity extends AppCompatActivity {
         Button btnReject = new Button(this);
         btnReject.setText("Odrzuć");
 
-        // równy rozmiar przycisków
+
         LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         blp.setMargins(0, 16, 16, 0);
@@ -117,7 +117,7 @@ public class RequestsActivity extends AppCompatActivity {
         btnReject.setLayoutParams(blp2);
 
         btnAccept.setOnClickListener(v -> {
-            // Biometria wymagana do akceptacji requestu
+
             if (!BiometricAuthHelper.canUseBiometrics(this)) {
                 Toast.makeText(this, "Brak biometrii / brak dodanego odcisku palca", Toast.LENGTH_LONG).show();
                 return;

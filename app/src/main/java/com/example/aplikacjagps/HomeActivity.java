@@ -104,7 +104,7 @@ public class HomeActivity extends AppCompatActivity {
                     new String[]{Manifest.permission.POST_NOTIFICATIONS},
                     1001
             );
-            return; // stop: start serwisu dopiero po decyzji usera
+            return;
         }
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -214,7 +214,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void startSending(String sessionId, String uid) {
-        stopSending(); // żeby nie odpalać kilku timerów
+        stopSending();
 
         timer = new java.util.Timer();
         timer.scheduleAtFixedRate(new java.util.TimerTask() {
