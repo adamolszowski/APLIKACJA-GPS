@@ -6,6 +6,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -16,7 +24,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-public class MonitorActivity extends AppCompatActivity {
+public class MonitorActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private FirebaseAuth auth;
     private FirebaseFirestore db;
@@ -25,6 +33,11 @@ public class MonitorActivity extends AppCompatActivity {
 
     private ValueEventListener locationListener;
     private DatabaseReference locationRef;
+
+    // Google Maps
+    private GoogleMap gMap;
+    private Marker targetMarker;
+    private boolean cameraMoved = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +53,21 @@ public class MonitorActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
+        // Map init
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
+
         findAndListenActiveSession();
+    }
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        this.gMap = googleMap;
+        // Opcjonalne UI
+        gMap.getUiSettings().setZoomControlsEnabled(true);
     }
 
     private void findAndListenActiveSession() {
@@ -69,7 +96,7 @@ public class MonitorActivity extends AppCompatActivity {
                     DocumentSnapshot sessionDoc = qs.getDocuments().get(0);
 
                     String sessionId = sessionDoc.getId();
-                    String targetUid = sessionDoc.getString("targetUid"); // <-- TO jest UID monitorowanego
+                    String targetUid = sessionDoc.getString("targetUid"); // UID monitorowanego
 
                     tvStatus.setText("Sesja aktywna");
                     tvSessionId.setText("SessionId: " + sessionId);
@@ -91,12 +118,21 @@ public class MonitorActivity extends AppCompatActivity {
                         tvTargetPublicId.setText("Monitorowany ID (public): -");
                     }
 
+                    // Reset kamery przy zmianie sesji (na wypadek, gdyby kiedyś było przełączanie)
+                    cameraMoved = false;
+                    targetMarker = null;
+
                     listenRtdb(sessionId);
                 })
                 .addOnFailureListener(e -> tvStatus.setText("Błąd Firestore: " + e.getMessage()));
     }
 
     private void listenRtdb(String sessionId) {
+        // Usuń poprzedni listener, jeśli był (bezpieczniej)
+        if (locationRef != null && locationListener != null) {
+            locationRef.removeEventListener(locationListener);
+        }
+
         locationRef = FirebaseDatabase.getInstance()
                 .getReference("locations")
                 .child(sessionId)
@@ -114,6 +150,25 @@ public class MonitorActivity extends AppCompatActivity {
                 Double lng = snapshot.child("lng").getValue(Double.class);
 
                 tvLatLng.setText("LAT: " + lat + "\nLNG: " + lng);
+
+                if (lat == null || lng == null) return;
+                if (gMap == null) return;
+
+                LatLng pos = new LatLng(lat, lng);
+
+                if (targetMarker == null) {
+                    targetMarker = gMap.addMarker(new MarkerOptions()
+                            .position(pos)
+                            .title("Monitorowany"));
+                } else {
+                    targetMarker.setPosition(pos);
+                }
+
+                // Kamerę ustaw tylko pierwszy raz, żeby nie skakało przy każdej aktualizacji
+                if (!cameraMoved) {
+                    gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, 16f));
+                    cameraMoved = true;
+                }
             }
 
             @Override
