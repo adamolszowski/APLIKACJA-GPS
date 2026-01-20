@@ -112,6 +112,15 @@
                     app:cornerRadius="14dp" />
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMonitoredPanel"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Panel monitorowanego (biometria)"
+                    android:layout_marginTop="10dp"
+                    app:cornerRadius="14dp" />
+
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnOpenMonitor"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"

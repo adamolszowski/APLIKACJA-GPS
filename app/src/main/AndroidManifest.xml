@@ -35,7 +35,9 @@
             android:exported="false"
             android:foregroundServiceType="location" />
 
-
+        <activity
+            android:name=".MonitoredSessionActivity"
+            android:exported="false" />
 
         <activity
             android:name=".RequestsActivity"

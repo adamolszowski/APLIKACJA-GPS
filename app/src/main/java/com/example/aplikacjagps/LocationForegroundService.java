@@ -14,16 +14,20 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
 public class LocationForegroundService extends Service {
 
     private static final String CHANNEL_ID = "location_channel";
     private static final int NOTIF_ID = 101;
 
+    private static final long MIN_INTERVAL_MS = 5_000L;
+    private static final long DEFAULT_INTERVAL_MS = 60_000L;
+
     private FirebaseAuth auth;
     private FirebaseFirestore db;
-
     private LocationSender sender;
 
     private Handler handler;
@@ -32,17 +36,18 @@ public class LocationForegroundService extends Service {
     private String activeSessionId = null;
     private boolean isTarget = false;
 
+    private long gpsIntervalMs = DEFAULT_INTERVAL_MS;
+
+    private ListenerRegistration sessionListener;
+    private boolean started = false;
+
     @Override
     public void onCreate() {
         super.onCreate();
-
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
-
         sender = new LocationSender(getApplicationContext());
-
         handler = new Handler(Looper.getMainLooper());
-
         createNotificationChannel();
     }
 
@@ -50,7 +55,12 @@ public class LocationForegroundService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         startForeground(NOTIF_ID, buildNotification("Sesja monitorowania aktywna", "Aplikacja działa w tle"));
 
-        loadActiveSessionAndStart();
+        // ważne: nie uruchamiaj kolejnej pętli jeśli już działa
+        if (!started) {
+            started = true;
+            loadActiveSessionAndStart();
+        }
+
         return START_STICKY;
     }
 
@@ -62,7 +72,6 @@ public class LocationForegroundService extends Service {
 
         String uid = auth.getCurrentUser().getUid();
 
-
         db.collection("sessions")
                 .whereEqualTo("status", "active")
                 .whereEqualTo("targetUid", uid)
@@ -72,10 +81,9 @@ public class LocationForegroundService extends Service {
                     if (!q1.isEmpty()) {
                         activeSessionId = q1.getDocuments().get(0).getId();
                         isTarget = true;
-                        startLoop();
+                        attachSessionListenerAndStartLoop();
                         return;
                     }
-
 
                     db.collection("sessions")
                             .whereEqualTo("status", "active")
@@ -85,13 +93,45 @@ public class LocationForegroundService extends Service {
                             .addOnSuccessListener(q2 -> {
                                 if (!q2.isEmpty()) {
                                     activeSessionId = q2.getDocuments().get(0).getId();
-                                    isTarget = false; // monitor nie musi wysyłać lokalizacji
-                                    startLoop();
+                                    isTarget = false;
+                                    attachSessionListenerAndStartLoop();
                                 } else {
                                     stopSelf();
                                 }
                             });
                 });
+    }
+
+    private void attachSessionListenerAndStartLoop() {
+        detachSessionListener();
+
+        if (activeSessionId == null) {
+            stopSelf();
+            return;
+        }
+
+        DocumentReference ref = db.collection("sessions").document(activeSessionId);
+
+        sessionListener = ref.addSnapshotListener((snap, err) -> {
+            if (err != null || snap == null || !snap.exists()) return;
+
+            String status = snap.getString("status");
+            if (!"active".equals(status)) {
+                stopSelf();
+                return;
+            }
+
+            Long gpsSec = snap.getLong("gpsIntervalSec");
+            long newMs = (gpsSec == null ? DEFAULT_INTERVAL_MS : Math.max(MIN_INTERVAL_MS, gpsSec * 1000L));
+
+            if (newMs != gpsIntervalMs) {
+                gpsIntervalMs = newMs;
+                // restart pętli, żeby zmiana interwału weszła od razu
+                startLoop();
+            }
+        });
+
+        startLoop();
     }
 
     private void startLoop() {
@@ -105,14 +145,14 @@ public class LocationForegroundService extends Service {
                     return;
                 }
 
-                String uid = auth.getCurrentUser().getUid();
-
-
                 if (isTarget) {
+                    String uid = auth.getCurrentUser().getUid();
                     sender.sendOnce(activeSessionId, uid);
+                    handler.postDelayed(this, gpsIntervalMs);
+                } else {
+                    // monitor nie wysyła GPS
+                    handler.postDelayed(this, 30_000L);
                 }
-
-                handler.postDelayed(this, 60_000);
             }
         };
 
@@ -121,19 +161,27 @@ public class LocationForegroundService extends Service {
 
     private void stopLoop() {
         if (handler != null && tick != null) handler.removeCallbacks(tick);
+        tick = null;
+    }
+
+    private void detachSessionListener() {
+        if (sessionListener != null) {
+            sessionListener.remove();
+            sessionListener = null;
+        }
     }
 
     @Override
     public void onDestroy() {
         stopLoop();
+        detachSessionListener();
+        started = false;
         super.onDestroy();
     }
 
     @Nullable
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    public IBinder onBind(Intent intent) { return null; }
 
     private Notification buildNotification(String title, String text) {
         return new NotificationCompat.Builder(this, CHANNEL_ID)

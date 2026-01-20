@@ -94,6 +94,24 @@
                         android:text="LAT/LNG: -"
                         android:textSize="14sp"
                         android:alpha="0.9" />
+                    <TextView
+                        android:id="@+id/tvBiometricStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Biometria: -"
+                        android:textSize="14sp"
+                        android:alpha="0.9" />
+
+                    <TextView
+                        android:id="@+id/tvSessionParams"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Parametry: -"
+                        android:textSize="14sp"
+                        android:alpha="0.9" />
+
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

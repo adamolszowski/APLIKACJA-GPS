@@ -2,14 +2,13 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/rootStartSession"
+    android:id="@+id/rootMonitored"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="20dp"
     android:background="@android:color/white">
 
     <com.google.android.material.card.MaterialCardView
-        android:id="@+id/startSessionCard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:cardCornerRadius="20dp"
@@ -34,69 +33,50 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Start sesji"
+                    android:text="Panel monitorowanego"
                     android:textSize="26sp"
                     android:textStyle="bold"
                     android:paddingBottom="6dp" />
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tvSessionStatus"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Wpisz publiczne ID oraz ustaw interwały (min. 5s)"
+                    android:text="Status:"
                     android:textSize="14sp"
-                    android:alpha="0.8"
-                    android:paddingBottom="16dp" />
+                    android:alpha="0.9"
+                    android:paddingBottom="10dp" />
 
-                <com.google.android.material.textfield.TextInputLayout
+                <TextView
+                    android:id="@+id/tvMonitorPublicId"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Publiczne ID"
-                    app:startIconDrawable="@android:drawable/ic_menu_mylocation">
+                    android:text="Monitoruje:"
+                    android:textSize="15sp"
+                    android:paddingBottom="6dp" />
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etPublicId"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text"
-                        android:imeOptions="actionNext" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
+                <TextView
+                    android:id="@+id/tvGpsInterval"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:hint="Interwał GPS (sekundy, min 5)"
-                    app:startIconDrawable="@android:drawable/ic_menu_compass">
+                    android:text="GPS:"
+                    android:textSize="15sp"
+                    android:paddingBottom="6dp" />
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etGpsIntervalSec"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number"
-                        android:imeOptions="actionNext" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
+                <TextView
+                    android:id="@+id/tvBioInterval"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:hint="Interwał biometrii (sekundy, min 5)"
-                    app:startIconDrawable="@android:drawable/ic_lock_idle_lock">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etBioIntervalSec"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number"
-                        android:imeOptions="actionDone" />
-                </com.google.android.material.textfield.TextInputLayout>
+                    android:text="Biometria:"
+                    android:textSize="15sp"
+                    android:paddingBottom="10dp" />
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
                     app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp">
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="12dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -107,40 +87,69 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Informacja"
+                            android:text="Twoja lokalizacja"
                             android:textStyle="bold"
                             android:paddingBottom="8dp" />
 
                         <TextView
-                            android:id="@+id/tvInfo"
+                            android:id="@+id/tvLatLng"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Po wysłaniu prośby druga osoba musi ją zaakceptować w „Zapytaniach”. Biometria w trakcie sesji ma okno 3 sekundy (tło na czerwono)."
+                            android:text="LAT/LNG:"
                             android:textSize="14sp"
                             android:alpha="0.9" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSendRequest"
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:text="Wyślij prośbę o monitorowanie"
-                    android:textColor="@android:color/white"
-                    android:background="@drawable/btn_gradient_ripple"
-                    android:backgroundTint="@null"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:backgroundTint="@null"
-                    app:cornerRadius="14dp" />
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Biometria"
+                            android:textStyle="bold"
+                            android:paddingBottom="8dp" />
+
+                        <TextView
+                            android:id="@+id/tvBioCountdown"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Biometria: -"
+                            android:textSize="14sp"
+                            android:alpha="0.9"
+                            android:paddingBottom="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnBioNow"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Przekaż odcisk palca"
+                            android:textColor="@android:color/white"
+                            android:background="@drawable/btn_gradient_ripple"
+                            android:backgroundTint="@null"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            app:backgroundTint="@null"
+                            app:cornerRadius="14dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnBack"
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
                     android:text="Wróć" />
 
             </LinearLayout>

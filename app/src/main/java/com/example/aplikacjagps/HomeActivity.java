@@ -1,28 +1,20 @@
 package com.example.aplikacjagps;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-
-import androidx.core.content.ContextCompat;
-
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.os.Build;
-
-import androidx.core.app.ActivityCompat;
-
-import android.widget.Toast;
-
-
-
-
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -32,9 +24,6 @@ public class HomeActivity extends AppCompatActivity {
     private TextView tvUid;
     private TextView tvPublicId;
 
-    private java.util.Timer timer;
-    private LocationSender locationSender;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,13 +31,11 @@ public class HomeActivity extends AppCompatActivity {
 
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
-        locationSender = new LocationSender(this);
-
 
         tvUid = findViewById(R.id.tvUid);
         tvPublicId = findViewById(R.id.tvPublicId);
-        Button btnLogout = findViewById(R.id.btnLogout);
 
+        Button btnLogout = findViewById(R.id.btnLogout);
         btnLogout.setOnClickListener(v -> {
             stopService(new Intent(this, LocationForegroundService.class));
             auth.signOut();
@@ -57,23 +44,21 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         Button btnStartSession = findViewById(R.id.btnStartSession);
-
-        btnStartSession.setOnClickListener(v -> {
-            startActivity(new Intent(this, StartSessionActivity.class));
-        });
+        btnStartSession.setOnClickListener(v -> startActivity(new Intent(this, StartSessionActivity.class)));
 
         Button btnRequests = findViewById(R.id.btnRequests);
-        btnRequests.setOnClickListener(v ->
-                startActivity(new Intent(this, RequestsActivity.class))
-        );
+        btnRequests.setOnClickListener(v -> startActivity(new Intent(this, RequestsActivity.class)));
 
         Button btnOpenMonitor = findViewById(R.id.btnOpenMonitor);
-        btnOpenMonitor.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, MonitorActivity.class));
-        });
+        btnOpenMonitor.setOnClickListener(v -> startActivity(new Intent(this, MonitorActivity.class)));
 
-
-
+        // ✅ PANEL MONITOROWANEGO (jeśli masz przycisk w XML)
+        Button btnMonitoredPanel = findViewById(R.id.btnMonitoredPanel);
+        if (btnMonitoredPanel != null) {
+            btnMonitoredPanel.setOnClickListener(v ->
+                    startActivity(new Intent(this, MonitoredSessionActivity.class))
+            );
+        }
     }
 
     private void startForegroundServiceIfNeeded() {
@@ -81,13 +66,9 @@ public class HomeActivity extends AppCompatActivity {
         ContextCompat.startForegroundService(this, intent);
     }
 
-
-
     @Override
     protected void onStart() {
         super.onStart();
-
-
 
         if (auth.getCurrentUser() == null) {
             startActivity(new Intent(this, RegisterActivity.class));
@@ -118,12 +99,7 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-
-
-
         startServiceOnlyIfSessionActive();
-        startSendingIfTargetHasActiveSession();
-
 
         String uid = auth.getCurrentUser().getUid();
         tvUid.setText("UID: " + uid);
@@ -139,8 +115,6 @@ public class HomeActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> tvPublicId.setText("Twoje ID: (błąd odczytu)"));
-
-
     }
 
     @Override
@@ -149,9 +123,7 @@ public class HomeActivity extends AppCompatActivity {
 
         if (requestCode == 1001) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (auth.getCurrentUser() != null) {
-                    startServiceOnlyIfSessionActive();
-                }
+                if (auth.getCurrentUser() != null) startServiceOnlyIfSessionActive();
             } else {
                 Toast.makeText(this, "Bez zgody na powiadomienia serwis w tle może nie działać poprawnie.", Toast.LENGTH_LONG).show();
             }
@@ -159,13 +131,11 @@ public class HomeActivity extends AppCompatActivity {
 
         if (requestCode == 2001) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // tu wrócimy do normalnego flow (np. ponownie onStart albo wywołanie sprawdzania sesji)
                 startServiceOnlyIfSessionActive();
             } else {
                 Toast.makeText(this, "Bez lokalizacji nie da się wysyłać pozycji.", Toast.LENGTH_LONG).show();
             }
         }
-
     }
 
     private void startServiceOnlyIfSessionActive() {
@@ -192,45 +162,4 @@ public class HomeActivity extends AppCompatActivity {
                             });
                 });
     }
-
-
-    private void startSendingIfTargetHasActiveSession() {
-        String uid = auth.getCurrentUser().getUid();
-
-        db.collection("sessions")
-                .whereEqualTo("status", "active")
-                .whereEqualTo("targetUid", uid)
-                .limit(1)
-                .get()
-                .addOnSuccessListener(q -> {
-                    if (q.isEmpty()) {
-                        stopSending();
-                        return;
-                    }
-
-                    String sessionId = q.getDocuments().get(0).getId();
-                    startSending(sessionId, uid);
-                });
-    }
-
-    private void startSending(String sessionId, String uid) {
-        stopSending();
-
-        timer = new java.util.Timer();
-        timer.scheduleAtFixedRate(new java.util.TimerTask() {
-            @Override
-            public void run() {
-                locationSender.sendOnce(sessionId, uid);
-            }
-        }, 0, 60_000);
-    }
-
-    private void stopSending() {
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
-    }
-
-
 }
