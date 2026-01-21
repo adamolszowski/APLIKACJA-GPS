@@ -56,7 +56,7 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
 
     private LatLng pendingPos = null;
 
-    // Sesja: parametry + ostatnie OK biometrii
+
     private long gpsIntervalSec = 60L;
     private long biometricIntervalSec = 60L;
     private long biometricWindowSec = 3L;
@@ -104,9 +104,6 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
     }
 
     private void setupMapFragment() {
-        // Obsługa obu wariantów layoutu:
-        // 1) <fragment android:id="@+id/map" .../>  -> findFragmentById
-        // 2) FrameLayout/FragmentContainerView id=map -> podpinamy dynamicznie fragment (TAG: MAP)
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
 
@@ -129,7 +126,7 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.gMap = googleMap;
 
-        // ✅ kontrolki przybliżania/oddalania
+
         gMap.getUiSettings().setZoomControlsEnabled(true);
 
         if (pendingPos != null) updateMapPosition(pendingPos);

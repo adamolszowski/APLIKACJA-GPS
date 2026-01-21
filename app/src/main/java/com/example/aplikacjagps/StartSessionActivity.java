@@ -117,7 +117,7 @@ public class StartSessionActivity extends AppCompatActivity {
         data.put("status", "pending");
         data.put("createdAt", FieldValue.serverTimestamp());
 
-        // NOWE: ustawienia sesji
+
         data.put("gpsIntervalSec", gpsIntervalSec);
         data.put("biometricIntervalSec", bioIntervalSec);
         data.put("biometricWindowSec", BIO_WINDOW_SEC);

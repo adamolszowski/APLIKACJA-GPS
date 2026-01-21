@@ -78,7 +78,7 @@ public class RegisterActivity extends AppCompatActivity {
                     );
         });
 
-        // ✅ zamiast finish() -> przejście do LoginActivity
+
         btnGoLogin.setOnClickListener(v -> {
             Intent i = new Intent(this, LoginActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

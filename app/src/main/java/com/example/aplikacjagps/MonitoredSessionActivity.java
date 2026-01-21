@@ -1,15 +1,19 @@
 package com.example.aplikacjagps;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.TypedValue;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.AttrRes;
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
@@ -22,8 +26,8 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.Locale;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class MonitoredSessionActivity extends AppCompatActivity {
@@ -39,7 +43,7 @@ public class MonitoredSessionActivity extends AppCompatActivity {
     private TextView tvSessionStatus, tvMonitorPublicId, tvGpsInterval, tvBioInterval, tvLatLng, tvBioCountdown;
     private MaterialButton btnBack;
 
-    private android.view.View root;
+    private View root;
 
     private String sessionId;
     private String monitorUid;
@@ -49,16 +53,20 @@ public class MonitoredSessionActivity extends AppCompatActivity {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    // RTDB
+
     private DatabaseReference locationRef;
     private ValueEventListener locationListener;
 
-    // biometria
+
     private boolean windowOpen = false;
     private long windowEndAt = 0L;
     private Runnable openWindowRunnable;
     private Runnable countdownRunnable;
     private BiometricPrompt currentPrompt;
+
+
+    @ColorInt private int defaultBgColor;
+    @ColorInt private int bioWindowBgColor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +77,17 @@ public class MonitoredSessionActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
 
         root = findViewById(R.id.rootMonitored);
+
+
+        defaultBgColor = resolveThemeColor(com.google.android.material.R.attr.colorSurface,
+                ContextCompat.getColor(this, android.R.color.background_dark));
+
+        bioWindowBgColor = resolveThemeColor(
+                com.google.android.material.R.attr.colorErrorContainer,
+                0xFFFFCDD2 // fallback
+        );
+
+        root.setBackgroundColor(defaultBgColor);
 
         tvSessionStatus = findViewById(R.id.tvSessionStatus);
         tvMonitorPublicId = findViewById(R.id.tvMonitorPublicId);
@@ -201,9 +220,7 @@ public class MonitoredSessionActivity extends AppCompatActivity {
         locationListener = null;
     }
 
-    // =========================
-    // BIOMETRIA: okno 3 sekundy
-    // =========================
+
 
     private void scheduleNextBioWindow(long delayMs) {
         cancelBioRunnables();
@@ -211,21 +228,21 @@ public class MonitoredSessionActivity extends AppCompatActivity {
         openWindowRunnable = this::openBioWindow;
         handler.postDelayed(openWindowRunnable, delayMs);
 
-        tvBioCountdown.setText("Biometria: następna próba za " + (delayMs / 1000L) + "s");
+        tvBioCountdown.setText("Odczyt co " + (delayMs / 1000L) + "s");
     }
 
     private void openBioWindow() {
         windowOpen = true;
         windowEndAt = System.currentTimeMillis() + BIO_WINDOW_MS;
 
-        // tło na czerwono
-        root.setBackgroundColor(Color.parseColor("#FFCDD2"));
+
+        root.setBackgroundColor(bioWindowBgColor);
         tvBioCountdown.setText("Biometria: OKNO OTWARTE (3s)");
 
-        // start prompt od razu (wymuszenie)
+
         startBiometricPrompt();
 
-        // licznik
+
         countdownRunnable = new Runnable() {
             @Override
             public void run() {
@@ -250,13 +267,14 @@ public class MonitoredSessionActivity extends AppCompatActivity {
     private void closeBioWindow(boolean success) {
         windowOpen = false;
 
-        // przywróć tło
-        root.setBackgroundColor(Color.WHITE);
-        // zatrzymaj licznik
+
+        root.setBackgroundColor(defaultBgColor);
+
+
         if (countdownRunnable != null) handler.removeCallbacks(countdownRunnable);
         countdownRunnable = null;
 
-        // anuluj prompt, jeśli dalej wisi
+
         if (currentPrompt != null) {
             try { currentPrompt.cancelAuthentication(); } catch (Exception ignored) {}
             currentPrompt = null;
@@ -284,7 +302,7 @@ public class MonitoredSessionActivity extends AppCompatActivity {
                     scheduleNextBioWindow(bioIntervalMs);
                 },
                 () -> {
-                    // błąd/anulowanie – user może próbować ponownie aż do timeoutu
+
                 }
         );
     }
@@ -292,8 +310,7 @@ public class MonitoredSessionActivity extends AppCompatActivity {
     private void writeBioResult(String result) {
         if (sessionId == null) return;
 
-        // Nie nadpisujemy biometricLastOkAt przy niepowodzeniu.
-        // Dzięki temu monitorujący zawsze widzi: "ostatnio potwierdzone X temu".
+
         Map<String, Object> upd = new HashMap<>();
         upd.put("biometricLastResult", result);
         upd.put("biometricLastAttemptAt", FieldValue.serverTimestamp());
@@ -305,7 +322,9 @@ public class MonitoredSessionActivity extends AppCompatActivity {
         db.collection("sessions")
                 .document(sessionId)
                 .update(upd);
-    } void cancelBioRunnables() {
+    }
+
+    private void cancelBioRunnables() {
         if (openWindowRunnable != null) handler.removeCallbacks(openWindowRunnable);
         if (countdownRunnable != null) handler.removeCallbacks(countdownRunnable);
         openWindowRunnable = null;
@@ -322,7 +341,7 @@ public class MonitoredSessionActivity extends AppCompatActivity {
         }
 
         windowOpen = false;
-        root.setBackgroundColor(Color.WHITE);
+        root.setBackgroundColor(defaultBgColor);
     }
 
     @Override
@@ -338,6 +357,17 @@ public class MonitoredSessionActivity extends AppCompatActivity {
         }
 
         windowOpen = false;
-        root.setBackgroundColor(Color.WHITE);
+        root.setBackgroundColor(defaultBgColor);
+    }
+
+
+    @ColorInt
+    private int resolveThemeColor(@AttrRes int attr, @ColorInt int fallback) {
+        TypedValue tv = new TypedValue();
+        if (getTheme().resolveAttribute(attr, tv, true)) {
+            if (tv.resourceId != 0) return ContextCompat.getColor(this, tv.resourceId);
+            return tv.data;
+        }
+        return fallback;
     }
 }

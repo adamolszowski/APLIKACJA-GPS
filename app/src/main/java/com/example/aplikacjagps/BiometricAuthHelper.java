@@ -31,9 +31,7 @@ public class BiometricAuthHelper {
         authenticateCancelable(activity, title, subtitle, description, onSuccess, () -> {});
     }
 
-    /**
-     * Wersja cancelable – zwraca BiometricPrompt, więc można zrobić prompt.cancelAuthentication().
-     */
+
     public static BiometricPrompt authenticateCancelable(
             @NonNull AppCompatActivity activity,
             @NonNull String title,
@@ -63,7 +61,7 @@ public class BiometricAuthHelper {
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
-                // użytkownik anulował / błąd
+
                 Toast.makeText(activity, errString, Toast.LENGTH_SHORT).show();
                 onErrorOrCancel.run();
             }
@@ -72,7 +70,7 @@ public class BiometricAuthHelper {
             public void onAuthenticationFailed() {
                 super.onAuthenticationFailed();
                 Toast.makeText(activity, "Nieprawidłowy odcisk palca", Toast.LENGTH_SHORT).show();
-                // nie traktujemy jako cancel – user może próbować dalej
+
             }
         });
 

@@ -28,13 +28,13 @@ public class RequestsActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private FirebaseFirestore db;
 
-    // GÓRA: zaproszenia
+
     private LinearLayout containerRequests;
 
-    // DÓŁ: aktywne sesje
+
     private LinearLayout containerActiveSessions;
 
-    // cache publicId żeby nie walić milionem odczytów
+
     private final Map<String, String> publicIdCache = new HashMap<>();
 
     private interface PublicIdCallback {
@@ -69,9 +69,7 @@ public class RequestsActivity extends AppCompatActivity {
         loadActiveSessions();
     }
 
-    // =========================
-    // Helper: UID -> Public ID
-    // =========================
+
     private void getPublicIdOrUid(String uid, PublicIdCallback cb) {
         if (uid == null || uid.trim().isEmpty()) {
             cb.onResult("-");
@@ -94,15 +92,13 @@ public class RequestsActivity extends AppCompatActivity {
                     cb.onResult(result);
                 })
                 .addOnFailureListener(e -> {
-                    // fallback do UID
+
                     publicIdCache.put(uid, uid);
                     cb.onResult(uid);
                 });
     }
 
-    // =========================
-    // 1) ZAPROSZENIA (pending)
-    // =========================
+
     private void loadPendingRequests() {
         containerRequests.removeAllViews();
 
@@ -158,9 +154,9 @@ public class RequestsActivity extends AppCompatActivity {
         tvTitle.setTextSize(17f);
 
         TextView tvFrom = new TextView(this);
-        tvFrom.setText("Od ID: ..."); // uzupełnimy async
+        tvFrom.setText("Od ID: ...");
 
-        // UID -> Public ID
+
         getPublicIdOrUid(fromUid, publicId -> tvFrom.setText("Od ID: " + publicId));
 
         TextView tvParams = new TextView(this);
@@ -268,9 +264,7 @@ public class RequestsActivity extends AppCompatActivity {
         return Math.max(MIN_INTERVAL_SEC, x);
     }
 
-    // =========================
-    // 2) AKTYWNE SESJE (active)
-    // =========================
+
     private void loadActiveSessions() {
         containerActiveSessions.removeAllViews();
 
@@ -343,12 +337,12 @@ public class RequestsActivity extends AppCompatActivity {
         tvWho.setText("...");
 
         if ("monitor".equals(role)) {
-            // monitorujesz targeta -> pokaż publicId targeta
+
             getPublicIdOrUid(targetUid, publicId ->
                     tvWho.setText("Monitorujesz ID: " + publicId)
             );
         } else {
-            // jesteś monitorowany -> pokaż publicId monitora
+
             getPublicIdOrUid(monitorUid, publicId ->
                     tvWho.setText("Jesteś monitorowany przez ID: " + publicId)
             );
@@ -392,7 +386,7 @@ public class RequestsActivity extends AppCompatActivity {
                         "endedAt", FieldValue.serverTimestamp()
                 )
                 .addOnSuccessListener(unused -> {
-                    // opcjonalnie: wyczyść RTDB lokacji tej sesji
+
                     FirebaseDatabase.getInstance()
                             .getReference("locations")
                             .child(sessionId)

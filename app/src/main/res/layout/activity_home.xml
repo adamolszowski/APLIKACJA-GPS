@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="20dp"
-    android:background="@android:color/white">
+    >
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/homeCard"
@@ -46,7 +46,7 @@
                     android:alpha="0.8"
                     android:paddingBottom="16dp" />
 
-                <!-- Sekcja ID -->
+
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

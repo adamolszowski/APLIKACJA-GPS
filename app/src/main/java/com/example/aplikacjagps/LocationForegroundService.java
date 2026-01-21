@@ -55,7 +55,7 @@ public class LocationForegroundService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         startForeground(NOTIF_ID, buildNotification("Sesja monitorowania aktywna", "Aplikacja działa w tle"));
 
-        // ważne: nie uruchamiaj kolejnej pętli jeśli już działa
+
         if (!started) {
             started = true;
             loadActiveSessionAndStart();
@@ -126,7 +126,6 @@ public class LocationForegroundService extends Service {
 
             if (newMs != gpsIntervalMs) {
                 gpsIntervalMs = newMs;
-                // restart pętli, żeby zmiana interwału weszła od razu
                 startLoop();
             }
         });
@@ -150,7 +149,7 @@ public class LocationForegroundService extends Service {
                     sender.sendOnce(activeSessionId, uid);
                     handler.postDelayed(this, gpsIntervalMs);
                 } else {
-                    // monitor nie wysyła GPS
+
                     handler.postDelayed(this, 30_000L);
                 }
             }
