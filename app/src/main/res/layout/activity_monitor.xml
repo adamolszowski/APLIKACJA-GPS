@@ -7,8 +7,6 @@
     android:padding="20dp"
     android:background="@android:color/white">
 
-
-
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/monitorCard"
         android:layout_width="0dp"
@@ -26,7 +24,6 @@
             android:layout_height="match_parent"
             android:padding="16dp">
 
-
             <TextView
                 android:id="@+id/tvTitle"
                 android:layout_width="0dp"
@@ -42,14 +39,13 @@
                 android:id="@+id/tvSubtitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
                 android:text="Podgląd lokalizacji monitorowanego"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:alpha="0.8"
+                android:layout_marginTop="4dp"
                 app:layout_constraintTop_toBottomOf="@id/tvTitle"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"/>
-
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/infoCard"
@@ -67,7 +63,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="12dp">
-
 
                     <TextView
                         android:id="@+id/tvStatus"
@@ -94,6 +89,16 @@
                         android:text="LAT/LNG: -"
                         android:textSize="14sp"
                         android:alpha="0.9" />
+
+                    <TextView
+                        android:id="@+id/tvSessionParams"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Parametry: GPS - | Biometria - | Okno -"
+                        android:textSize="14sp"
+                        android:alpha="0.9" />
+
                     <TextView
                         android:id="@+id/tvBiometricStatus"
                         android:layout_width="match_parent"
@@ -103,19 +108,8 @@
                         android:textSize="14sp"
                         android:alpha="0.9" />
 
-                    <TextView
-                        android:id="@+id/tvSessionParams"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Parametry: -"
-                        android:textSize="14sp"
-                        android:alpha="0.9" />
-
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/mapCard"
@@ -129,11 +123,12 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
-                <FrameLayout
+                <!-- ✅ TO MUSI BYĆ FRAGMENT, a nie FrameLayout -->
+                <fragment
                     android:id="@+id/map"
+                    android:name="com.google.android.gms.maps.SupportMapFragment"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-                </FrameLayout>
+                    android:layout_height="match_parent" />
 
             </com.google.android.material.card.MaterialCardView>
 

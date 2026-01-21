@@ -37,7 +37,8 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
     private FirebaseAuth auth;
     private FirebaseFirestore db;
 
-    private TextView tvStatus, tvLatLng, tvTargetPublicId, tvBiometricStatus, tvSessionParams;
+    private TextView tvStatus, tvLatLng, tvTargetPublicId;
+    private TextView tvBiometricStatus, tvSessionParams;
 
     private ValueEventListener locationListener;
     private DatabaseReference locationRef;
@@ -55,6 +56,21 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
 
     private LatLng pendingPos = null;
 
+    // Sesja: parametry + ostatnie OK biometrii
+    private long gpsIntervalSec = 60L;
+    private long biometricIntervalSec = 60L;
+    private long biometricWindowSec = 3L;
+    private Long lastBioOkMs = null;
+
+    private final Handler uiHandler = new Handler(Looper.getMainLooper());
+    private final Runnable biometricTicker = new Runnable() {
+        @Override
+        public void run() {
+            updateBiometricUi();
+            uiHandler.postDelayed(this, 1000);
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,12 +86,33 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
         db = FirebaseFirestore.getInstance();
 
         setupMapFragment();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
         findAndListenActiveSession();
+        startBiometricTicker();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        stopBiometricTicker();
+        detachRtdbListener();
+        detachSessionListener();
     }
 
     private void setupMapFragment() {
+        // Obsługa obu wariantów layoutu:
+        // 1) <fragment android:id="@+id/map" .../>  -> findFragmentById
+        // 2) FrameLayout/FragmentContainerView id=map -> podpinamy dynamicznie fragment (TAG: MAP)
         SupportMapFragment mapFragment =
-                (SupportMapFragment) getSupportFragmentManager().findFragmentByTag("MAP");
+                (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+
+        if (mapFragment == null) {
+            mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentByTag("MAP");
+        }
 
         if (mapFragment == null) {
             mapFragment = SupportMapFragment.newInstance();
@@ -84,12 +121,15 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
                     .replace(R.id.map, mapFragment, "MAP")
                     .commitNow();
         }
+
         mapFragment.getMapAsync(this);
     }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.gMap = googleMap;
+
+        // ✅ kontrolki przybliżania/oddalania
         gMap.getUiSettings().setZoomControlsEnabled(true);
 
         if (pendingPos != null) updateMapPosition(pendingPos);
@@ -102,6 +142,7 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
             tvLatLng.setText("LAT/LNG: -");
             tvBiometricStatus.setText("Biometria: -");
             tvSessionParams.setText("Parametry: -");
+            sessionIdActive = null;
             return;
         }
 
@@ -158,6 +199,7 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
         tvBiometricStatus.setText("Biometria: -");
         tvSessionParams.setText("Parametry: -");
         sessionIdActive = null;
+        lastBioOkMs = null;
         detachRtdbListener();
         detachSessionListener();
     }
@@ -170,41 +212,89 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
                 .addSnapshotListener((snap, err) -> {
                     if (err != null || snap == null || !snap.exists()) return;
 
+                    String status = snap.getString("status");
+                    if (status != null && !"active".equals(status)) {
+                        tvStatus.setText("Status: Sesja zakończona (" + status + ")");
+                        clearUiNoSession();
+                        return;
+                    }
+
                     Long gpsSec = snap.getLong("gpsIntervalSec");
                     Long bioSec = snap.getLong("biometricIntervalSec");
                     Long winSec = snap.getLong("biometricWindowSec");
 
-                    long g = (gpsSec == null ? 60 : gpsSec);
-                    long b = (bioSec == null ? 60 : bioSec);
-                    long w = (winSec == null ? 3 : winSec);
+                    gpsIntervalSec = clampMin5(gpsSec, 60L);
+                    biometricIntervalSec = clampMin5(bioSec, 60L);
+                    biometricWindowSec = (winSec == null) ? 3L : Math.max(0L, winSec);
 
-                    tvSessionParams.setText("Parametry: GPS " + g + "s | Biometria " + b + "s | Okno " + w + "s");
+                    tvSessionParams.setText("Parametry: GPS " + gpsIntervalSec + "s | Biometria " + biometricIntervalSec + "s | Okno " + biometricWindowSec + "s");
 
-                    String lastResult = snap.getString("biometricLastResult");
-                    Timestamp lastOkAt = snap.getTimestamp("biometricLastOkAt");
-
-                    if (lastResult == null) lastResult = "n/a";
-
-                    if ("ok".equals(lastResult)) {
-                        if (lastOkAt != null) {
-                            long diffSec = Math.max(0, (System.currentTimeMillis() - lastOkAt.toDate().getTime()) / 1000L);
-                            tvBiometricStatus.setText("Biometria: OK (" + diffSec + "s temu)");
-                        } else {
-                            tvBiometricStatus.setText("Biometria: OK");
-                        }
-                    } else if ("miss".equals(lastResult)) {
-                        tvBiometricStatus.setText("Biometria: BRAK POTWIERDZENIA");
-                    } else {
-                        tvBiometricStatus.setText("Biometria: " + lastResult);
-                    }
+                    Object okObj = snap.get("biometricLastOkAt");
+                    lastBioOkMs = parseFirestoreTimeToMs(okObj);
+                    updateBiometricUi();
                 });
     }
 
-    private void detachSessionListener() {
-        if (sessionListener != null) {
-            sessionListener.remove();
-            sessionListener = null;
+    private long clampMin5(Long v, long def) {
+        long x = (v == null ? def : v);
+        return Math.max(5L, x);
+    }
+
+    private Long parseFirestoreTimeToMs(Object v) {
+        if (v == null) return null;
+
+        if (v instanceof com.google.firebase.Timestamp) {
+            return ((com.google.firebase.Timestamp) v).toDate().getTime();
         }
+        if (v instanceof Long) {
+            long x = (Long) v;
+            return (x < 1000000000000L) ? (x * 1000L) : x; // sec -> ms
+        }
+        if (v instanceof Double) {
+            long x = ((Double) v).longValue();
+            return (x < 1000000000000L) ? (x * 1000L) : x;
+        }
+        return null;
+    }
+
+
+    private void updateBiometricUi() {
+        if (tvBiometricStatus == null) return;
+
+        if (lastBioOkMs == null) {
+            tvBiometricStatus.setText("Biometria: BRAK POTWIERDZENIA (ostatnio: nigdy)");
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long ageSec = Math.max(0L, (now - lastBioOkMs) / 1000L);
+
+        boolean ok = ageSec <= (biometricIntervalSec + biometricWindowSec);
+
+        if (ok) {
+            tvBiometricStatus.setText("Biometria: OK (ostatnio: " + formatAgo(ageSec) + " temu)");
+        } else {
+            tvBiometricStatus.setText("Biometria: BRAK POTWIERDZENIA (ostatnio: " + formatAgo(ageSec) + " temu)");
+        }
+    }
+
+    private String formatAgo(long sec) {
+        if (sec < 60) return sec + "s";
+        long min = sec / 60;
+        long s = sec % 60;
+        if (min < 60) return min + "m " + s + "s";
+        long h = min / 60;
+        long m = min % 60;
+        return h + "h " + m + "m";
+    }
+
+    private void startBiometricTicker() {
+        uiHandler.removeCallbacks(biometricTicker);
+        uiHandler.post(biometricTicker);
+    }
+
+    private void stopBiometricTicker() {
+        uiHandler.removeCallbacks(biometricTicker);
     }
 
     private void listenRtdb(String sessionId) {
@@ -218,28 +308,25 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
         locationListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists()) {
-                    tvLatLng.setText("LAT/LNG: brak danych");
-                    return;
-                }
-
                 Double lat = snapshot.child("lat").getValue(Double.class);
                 Double lng = snapshot.child("lng").getValue(Double.class);
 
-                if (lat == null || lng == null) {
-                    tvLatLng.setText("LAT/LNG: brak danych");
+                if (lat == null || lng == null) return;
+
+                LatLng pos = new LatLng(lat, lng);
+                tvLatLng.setText(String.format(Locale.ROOT, "LAT/LNG: %.6f, %.6f", lat, lng));
+
+                if (gMap == null) {
+                    pendingPos = pos;
                     return;
                 }
 
-                tvLatLng.setText(String.format(Locale.US, "LAT/LNG: %.5f, %.5f", lat, lng));
-
-                pendingPos = new LatLng(lat, lng);
-                updateMapPosition(pendingPos);
+                updateMapPosition(pos);
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                tvLatLng.setText("LAT/LNG: błąd RTDB");
+                tvStatus.setText("Status: Błąd RTDB: " + error.getMessage());
             }
         };
 
@@ -247,13 +334,10 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
     }
 
     private void updateMapPosition(@NonNull LatLng pos) {
-        if (gMap == null) return;
+        pendingPos = null;
 
         if (targetMarker == null) {
-            targetMarker = gMap.addMarker(new MarkerOptions()
-                    .position(pos)
-                    .title("Monitorowany"));
-
+            targetMarker = gMap.addMarker(new MarkerOptions().position(pos).title("Monitorowany"));
             gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, INITIAL_ZOOM));
             cameraInitialized = true;
             return;
@@ -304,10 +388,10 @@ public class MonitorActivity extends AppCompatActivity implements OnMapReadyCall
         locationListener = null;
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        detachRtdbListener();
-        detachSessionListener();
+    private void detachSessionListener() {
+        if (sessionListener != null) {
+            sessionListener.remove();
+        }
+        sessionListener = null;
     }
 }

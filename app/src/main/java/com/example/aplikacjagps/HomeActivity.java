@@ -21,7 +21,6 @@ public class HomeActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private FirebaseFirestore db;
 
-    private TextView tvUid;
     private TextView tvPublicId;
 
     @Override
@@ -32,14 +31,16 @@ public class HomeActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        tvUid = findViewById(R.id.tvUid);
         tvPublicId = findViewById(R.id.tvPublicId);
 
         Button btnLogout = findViewById(R.id.btnLogout);
         btnLogout.setOnClickListener(v -> {
             stopService(new Intent(this, LocationForegroundService.class));
             auth.signOut();
-            startActivity(new Intent(this, RegisterActivity.class));
+
+            Intent i = new Intent(this, LoginActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
             finish();
         });
 
@@ -49,16 +50,13 @@ public class HomeActivity extends AppCompatActivity {
         Button btnRequests = findViewById(R.id.btnRequests);
         btnRequests.setOnClickListener(v -> startActivity(new Intent(this, RequestsActivity.class)));
 
+        Button btnMonitoredPanel = findViewById(R.id.btnMonitoredPanel);
+        btnMonitoredPanel.setOnClickListener(v ->
+                startActivity(new Intent(this, MonitoredSessionActivity.class))
+        );
+
         Button btnOpenMonitor = findViewById(R.id.btnOpenMonitor);
         btnOpenMonitor.setOnClickListener(v -> startActivity(new Intent(this, MonitorActivity.class)));
-
-        // ✅ PANEL MONITOROWANEGO (jeśli masz przycisk w XML)
-        Button btnMonitoredPanel = findViewById(R.id.btnMonitoredPanel);
-        if (btnMonitoredPanel != null) {
-            btnMonitoredPanel.setOnClickListener(v ->
-                    startActivity(new Intent(this, MonitoredSessionActivity.class))
-            );
-        }
     }
 
     private void startForegroundServiceIfNeeded() {
@@ -71,7 +69,9 @@ public class HomeActivity extends AppCompatActivity {
         super.onStart();
 
         if (auth.getCurrentUser() == null) {
-            startActivity(new Intent(this, RegisterActivity.class));
+            Intent i = new Intent(this, LoginActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
             finish();
             return;
         }
@@ -102,8 +102,6 @@ public class HomeActivity extends AppCompatActivity {
         startServiceOnlyIfSessionActive();
 
         String uid = auth.getCurrentUser().getUid();
-        tvUid.setText("UID: " + uid);
-
         db.collection("users").document(uid)
                 .get()
                 .addOnSuccessListener(doc -> {

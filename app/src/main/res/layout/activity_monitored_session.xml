@@ -129,19 +129,6 @@
                             android:textSize="14sp"
                             android:alpha="0.9"
                             android:paddingBottom="10dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnBioNow"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Przekaż odcisk palca"
-                            android:textColor="@android:color/white"
-                            android:background="@drawable/btn_gradient_ripple"
-                            android:backgroundTint="@null"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            app:backgroundTint="@null"
-                            app:cornerRadius="14dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

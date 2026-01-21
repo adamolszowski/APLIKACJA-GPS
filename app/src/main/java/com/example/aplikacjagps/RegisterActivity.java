@@ -10,7 +10,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
-
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -19,7 +18,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -30,6 +28,7 @@ public class RegisterActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
+
         db = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
 
@@ -74,13 +73,16 @@ public class RegisterActivity extends AppCompatActivity {
                                         Toast.makeText(this, "Błąd zapisu profilu: " + e.getMessage(), Toast.LENGTH_LONG).show()
                                 );
                     })
-
                     .addOnFailureListener(e ->
                             Toast.makeText(this, "Błąd rejestracji: " + e.getMessage(), Toast.LENGTH_LONG).show()
                     );
         });
 
+        // ✅ zamiast finish() -> przejście do LoginActivity
         btnGoLogin.setOnClickListener(v -> {
+            Intent i = new Intent(this, LoginActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
             finish();
         });
     }
@@ -94,5 +96,4 @@ public class RegisterActivity extends AppCompatActivity {
         }
         return sb.toString().toUpperCase(Locale.ROOT);
     }
-
 }

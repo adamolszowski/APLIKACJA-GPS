@@ -23,6 +23,8 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MonitoredSessionActivity extends AppCompatActivity {
 
@@ -35,7 +37,7 @@ public class MonitoredSessionActivity extends AppCompatActivity {
     private FirebaseFirestore db;
 
     private TextView tvSessionStatus, tvMonitorPublicId, tvGpsInterval, tvBioInterval, tvLatLng, tvBioCountdown;
-    private MaterialButton btnBioNow, btnBack;
+    private MaterialButton btnBack;
 
     private android.view.View root;
 
@@ -74,20 +76,9 @@ public class MonitoredSessionActivity extends AppCompatActivity {
         tvBioInterval = findViewById(R.id.tvBioInterval);
         tvLatLng = findViewById(R.id.tvLatLng);
         tvBioCountdown = findViewById(R.id.tvBioCountdown);
-
-        btnBioNow = findViewById(R.id.btnBioNow);
         btnBack = findViewById(R.id.btnBack);
 
         btnBack.setOnClickListener(v -> finish());
-
-        btnBioNow.setEnabled(false);
-        btnBioNow.setOnClickListener(v -> {
-            if (!windowOpen) {
-                Toast.makeText(this, "Okno biometrii jest zamknięte", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            startBiometricPrompt();
-        });
     }
 
     @Override
@@ -114,7 +105,7 @@ public class MonitoredSessionActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(q -> {
                     if (q.isEmpty()) {
-                        tvSessionStatus.setText("Status: brak aktywnej sesji (monitorowany)");
+                        tvSessionStatus.setText("Status: brak aktywnej sesji");
                         tvMonitorPublicId.setText("Monitoruje: -");
                         tvGpsInterval.setText("GPS: -");
                         tvBioInterval.setText("Biometria: -");
@@ -229,8 +220,6 @@ public class MonitoredSessionActivity extends AppCompatActivity {
 
         // tło na czerwono
         root.setBackgroundColor(Color.parseColor("#FFCDD2"));
-
-        btnBioNow.setEnabled(true);
         tvBioCountdown.setText("Biometria: OKNO OTWARTE (3s)");
 
         // start prompt od razu (wymuszenie)
@@ -263,9 +252,6 @@ public class MonitoredSessionActivity extends AppCompatActivity {
 
         // przywróć tło
         root.setBackgroundColor(Color.WHITE);
-
-        btnBioNow.setEnabled(false);
-
         // zatrzymaj licznik
         if (countdownRunnable != null) handler.removeCallbacks(countdownRunnable);
         countdownRunnable = null;
@@ -306,15 +292,20 @@ public class MonitoredSessionActivity extends AppCompatActivity {
     private void writeBioResult(String result) {
         if (sessionId == null) return;
 
+        // Nie nadpisujemy biometricLastOkAt przy niepowodzeniu.
+        // Dzięki temu monitorujący zawsze widzi: "ostatnio potwierdzone X temu".
+        Map<String, Object> upd = new HashMap<>();
+        upd.put("biometricLastResult", result);
+        upd.put("biometricLastAttemptAt", FieldValue.serverTimestamp());
+
+        if ("ok".equals(result)) {
+            upd.put("biometricLastOkAt", FieldValue.serverTimestamp());
+        }
+
         db.collection("sessions")
                 .document(sessionId)
-                .update(
-                        "biometricLastResult", result,
-                        "biometricLastOkAt", "ok".equals(result) ? FieldValue.serverTimestamp() : null
-                );
-    }
-
-    private void cancelBioRunnables() {
+                .update(upd);
+    } void cancelBioRunnables() {
         if (openWindowRunnable != null) handler.removeCallbacks(openWindowRunnable);
         if (countdownRunnable != null) handler.removeCallbacks(countdownRunnable);
         openWindowRunnable = null;
@@ -332,7 +323,6 @@ public class MonitoredSessionActivity extends AppCompatActivity {
 
         windowOpen = false;
         root.setBackgroundColor(Color.WHITE);
-        btnBioNow.setEnabled(false);
     }
 
     @Override
@@ -349,6 +339,5 @@ public class MonitoredSessionActivity extends AppCompatActivity {
 
         windowOpen = false;
         root.setBackgroundColor(Color.WHITE);
-        btnBioNow.setEnabled(false);
     }
 }

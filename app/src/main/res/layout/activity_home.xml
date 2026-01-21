@@ -7,8 +7,6 @@
     android:padding="20dp"
     android:background="@android:color/white">
 
-
-
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/homeCard"
         android:layout_width="0dp"
@@ -70,14 +68,6 @@
                             android:paddingBottom="10dp" />
 
                         <TextView
-                            android:id="@+id/tvUid"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="UID:"
-                            android:textSize="16sp"
-                            android:paddingBottom="6dp" />
-
-                        <TextView
                             android:id="@+id/tvPublicId"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -86,7 +76,6 @@
                     </LinearLayout>
 
                 </com.google.android.material.card.MaterialCardView>
-
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnStartSession"
@@ -101,13 +90,12 @@
                     app:backgroundTint="@null"
                     app:cornerRadius="14dp" />
 
-
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRequests"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Zapytania (zgody)"
+                    android:text="Menedżer Sesji"
                     android:layout_marginTop="10dp"
                     app:cornerRadius="14dp" />
 
@@ -116,7 +104,7 @@
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Panel monitorowanego (biometria)"
+                    android:text="Panel monitorowanego"
                     android:layout_marginTop="10dp"
                     app:cornerRadius="14dp" />
 
@@ -125,10 +113,9 @@
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Podgląd (Monitoruj)"
+                    android:text="Panel monitorującego"
                     android:layout_marginTop="10dp"
                     app:cornerRadius="14dp" />
-
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnLogout"
